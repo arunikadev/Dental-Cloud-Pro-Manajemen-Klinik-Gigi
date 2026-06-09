@@ -15,7 +15,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from routers import auth, patients, doctors, services, appointments, medical_records, inventory
+from routers import auth, patients, doctors, services, appointments, medical_records, inventory, billing
 app.include_router(auth.router)
 app.include_router(patients.router)
 app.include_router(doctors.router)
@@ -23,3 +23,4 @@ app.include_router(services.router)
 app.include_router(appointments.router)
 app.include_router(medical_records.router)
 app.include_router(inventory.router)
+app.include_router(billing.router)
