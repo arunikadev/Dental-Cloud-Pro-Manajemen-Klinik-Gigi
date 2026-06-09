@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { formatCurrency, formatDateShort } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { useRouter } from "next/navigation";
+import { apiFetch } from "@/lib/api-client";
 
 // ─── Modal Buat Tagihan Baru ────────────────────────────────────────────────
 function CreateInvoiceModal({ open, onClose, onSuccess }: {
@@ -32,11 +33,9 @@ function CreateInvoiceModal({ open, onClose, onSuccess }: {
 
   useEffect(() => {
     if (!open) return;
-    fetch('/api/patients')
-      .then(r => r.json())
+    apiFetch('/patients')
       .then(data => { if (Array.isArray(data)) setPatients(data); });
-    fetch('/api/services')
-      .then(r => r.json())
+    apiFetch('/services')
       .then(data => { if (Array.isArray(data)) setServices(data); });
   }, [open]);
 
@@ -62,9 +61,8 @@ function CreateInvoiceModal({ open, onClose, onSuccess }: {
     try {
       const now = new Date();
       const invoiceNumber = `INV-${now.getFullYear()}${String(now.getMonth()+1).padStart(2,"0")}${String(now.getDate()).padStart(2,"0")}-${Date.now().toString().slice(-4)}`;
-      const res = await fetch('/api/invoices', {
+      const result = await apiFetch('/invoices', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           invoice: {
             invoice_number: invoiceNumber,
@@ -86,8 +84,6 @@ function CreateInvoiceModal({ open, onClose, onSuccess }: {
           })),
         }),
       });
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error || 'Gagal menyimpan tagihan');
       onSuccess();
       onClose();
       setForm({ patient_id: "", service_ids: [], payment_method: "tunai", notes: "" });
@@ -315,9 +311,8 @@ export default function BillingPage() {
   const fetchInvoices = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/invoices');
-      const data = await res.json();
-      if (res.ok && Array.isArray(data)) setInvoices(data);
+      const data = await apiFetch('/invoices');
+      if (Array.isArray(data)) setInvoices(data);
     } catch (err) {
       console.error(err);
     } finally {

@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { formatCurrency, formatDateLong, formatTime } from "@/lib/utils";
 import { supabase } from "@/lib/supabase";
 import { useRouter, useSearchParams } from "next/navigation";
+import { apiFetch } from "@/lib/api-client";
 
 // ─── Payment Modal ────────────────────────────────────────────────
 function PaymentModal({ open, onClose, invoice, onSuccess }: {
@@ -34,9 +35,8 @@ function PaymentModal({ open, onClose, invoice, onSuccess }: {
     setError("");
     try {
       const payNum = `PAY-${Date.now().toString().slice(-8)}`;
-      const res = await fetch(`/api/invoices/${invoice.id}`, {
+      await apiFetch(`/invoices/${invoice.id}`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           payment_number: payNum,
           amount: total,
@@ -44,8 +44,6 @@ function PaymentModal({ open, onClose, invoice, onSuccess }: {
           notes: change > 0 ? `Kembalian: ${formatCurrency(change)}` : null,
         }),
       });
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error || 'Gagal memproses pembayaran');
 
       onSuccess();
       onClose();
@@ -251,12 +249,15 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
   const fetchData = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/invoices/${id}`);
-      const data = await res.json();
-      if (res.ok) {
+      const data = await apiFetch<any>(`/invoices/${id}`);
+      if (data.invoice) {
         setInvoice(data.invoice);
         setItems(data.items || []);
         setPayment(data.payment || null);
+      } else {
+        setInvoice(data);
+        setItems(data.items || []);
+        setPayment(data.payments?.[0] || null);
       }
     } catch (e) {
       console.error(e);

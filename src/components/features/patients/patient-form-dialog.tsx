@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/lib/supabase";
+import { apiFetch } from "@/lib/api-client";
 import { CheckCircle } from "lucide-react";
 
 // Zod schema for patient validation
@@ -72,11 +73,9 @@ export function PatientFormDialog({ open, onOpenChange }: PatientFormDialogProps
       // Create a unique patient code
       const patientCode = `PAT-${Math.floor(10000 + Math.random() * 90000)}`;
       
-      const res = await fetch('/api/patients', {
+      const dataApi = await apiFetch('/patients', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          patient_code: patientCode,
           full_name: data.fullName,
           nik: data.nik,
           date_of_birth: data.dateOfBirth,
@@ -89,9 +88,6 @@ export function PatientFormDialog({ open, onOpenChange }: PatientFormDialogProps
         }),
       });
 
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error || 'Gagal menyimpan');
-      
       setSuccessMsg("Pasien berhasil disimpan!");
       reset();
       setTimeout(() => {

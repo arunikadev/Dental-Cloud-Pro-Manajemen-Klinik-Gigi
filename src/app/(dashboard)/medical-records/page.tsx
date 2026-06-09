@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { getInitials } from "@/lib/utils";
+import { apiFetch } from "@/lib/api-client";
 
 // ─── Modal Edit Patient Details ────────────────────────────────────────────
 function EditDetailsModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -151,9 +152,8 @@ function MedicalRecordsContent() {
     async function load() {
       if (!patientId) { setLoadingPatient(false); return; }
       try {
-        const res = await fetch('/api/patients');
-        const data = await res.json();
-        const found = data.find((p:any) => p.id === patientId);
+        const data = await apiFetch('/patients');
+        const found = (data as any[]).find((p:any) => p.id === patientId);
         if (found) setPatient(found);
       } catch (e) { console.error(e); }
       setLoadingPatient(false);

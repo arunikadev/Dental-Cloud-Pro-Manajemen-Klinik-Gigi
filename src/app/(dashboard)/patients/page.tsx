@@ -13,6 +13,7 @@ import { Patient } from "@/types";
 import { useTable } from "@/hooks/use-table";
 import { supabase } from "@/lib/supabase";
 import { useEffect, useState as useReactState } from "react";
+import { apiFetch } from "@/lib/api-client";
 import { PatientFormDialog } from "@/components/features/patients/patient-form-dialog";
 import { AppointmentFormDialog } from "@/components/features/appointments/appointment-form-dialog";
 import { useRouter } from "next/navigation";
@@ -26,10 +27,8 @@ export default function PatientsPage() {
   const fetchPatients = async () => {
     setIsLoading(true);
     try {
-      const res = await fetch('/api/patients');
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setDbPatients(data as Patient[]);
+      const data = await apiFetch<Patient[]>('/patients');
+      setDbPatients(data);
     } catch (error) {
       console.error("Error fetching patients:", error);
     } finally {

@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CalendarClock, CheckCircle, Loader2 } from "lucide-react";
+import { apiFetch } from "@/lib/api-client";
 
 const appointmentSchema = z.object({
   patient_id: z.string().min(1, "Pasien wajib dipilih"),
@@ -38,8 +39,8 @@ export function AppointmentFormDialog({ open, onOpenChange, onSuccess, defaultPa
 
   useEffect(() => {
     if (!open) return;
-    fetch('/api/patients').then(r => r.json()).then(d => { if (Array.isArray(d)) setPatients(d); });
-    fetch('/api/doctors').then(r => r.json()).then(d => { if (Array.isArray(d)) setDoctors(d); });
+    apiFetch('/patients').then(d => { if (Array.isArray(d)) setPatients(d); });
+    apiFetch('/doctors').then(d => { if (Array.isArray(d)) setDoctors(d); });
   }, [open]);
 
   const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm<AppointmentFormValues>({
@@ -56,9 +57,8 @@ export function AppointmentFormDialog({ open, onOpenChange, onSuccess, defaultPa
     setIsSubmitting(true);
     setErrorMsg("");
     try {
-      const res = await fetch('/api/appointments', {
+      await apiFetch('/appointments', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           appointment_code: `APT-${Date.now()}`,
           patient_id: data.patient_id,
@@ -69,8 +69,6 @@ export function AppointmentFormDialog({ open, onOpenChange, onSuccess, defaultPa
           status: "scheduled",
         }),
       });
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error || "Gagal menyimpan janji");
 
       setSuccessMsg("Janji temu berhasil disimpan!");
       reset();
