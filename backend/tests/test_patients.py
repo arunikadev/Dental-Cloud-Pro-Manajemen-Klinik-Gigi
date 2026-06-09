@@ -1,6 +1,8 @@
 import pytest
+import uuid
 
-async def get_auth_token(client, email, password="TestPass@123"):
+async def get_auth_token(client, email_prefix, password="TestPass@123"):
+    email = f"{email_prefix}_{uuid.uuid4()}@example.com"
     await client.post("/auth/register", json={"email": email, "password": password})
     r = await client.post("/auth/login", json={"email": email, "password": password})
     return r.json()["access_token"]
@@ -12,7 +14,7 @@ async def test_list_patients_requires_auth(client):
 
 @pytest.mark.asyncio
 async def test_create_and_list_patient(client):
-    token = await get_auth_token(client, "admin_patients@example.com")
+    token = await get_auth_token(client, "admin_patients")
     headers = {"Authorization": f"Bearer {token}"}
 
     create_resp = await client.post("/patients", headers=headers, json={
@@ -32,7 +34,7 @@ async def test_create_and_list_patient(client):
 
 @pytest.mark.asyncio
 async def test_get_patient_by_id(client):
-    token = await get_auth_token(client, "admin_getpatient@example.com")
+    token = await get_auth_token(client, "admin_getpatient")
     headers = {"Authorization": f"Bearer {token}"}
     create = await client.post("/patients", headers=headers, json={
         "full_name": "Siti Rahayu",
@@ -46,7 +48,7 @@ async def test_get_patient_by_id(client):
 
 @pytest.mark.asyncio
 async def test_update_patient(client):
-    token = await get_auth_token(client, "admin_updatepatient@example.com")
+    token = await get_auth_token(client, "admin_updatepatient")
     headers = {"Authorization": f"Bearer {token}"}
     create = await client.post("/patients", headers=headers, json={
         "full_name": "Ahmad Fauzi",
