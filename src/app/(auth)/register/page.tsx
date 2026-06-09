@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, Stethoscope, Mail, Lock, User, Building2, Phone, Loader2, ShieldCheck } from "lucide-react";
-import { supabase, supabaseIsConfigured } from "@/lib/supabase";
+import { apiFetch } from "@/lib/api-client";
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -12,7 +12,6 @@ export default function RegisterPage() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
-  const [success, setSuccess] = useState(false);
   const [form, setForm] = useState({
     fullName: "",
     clinicName: "",
@@ -25,10 +24,6 @@ export default function RegisterPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!supabaseIsConfigured) {
-      setError("⚠️ Supabase belum dikonfigurasi. Isi kredensial di .env.local lalu restart server.");
-      return;
-    }
     if (form.password !== form.confirmPassword) {
       setError("Password dan konfirmasi password tidak cocok.");
       return;
@@ -40,44 +35,17 @@ export default function RegisterPage() {
     setIsLoading(true);
     setError("");
     try {
-      const { error } = await supabase.auth.signUp({
-        email: form.email,
-        password: form.password,
-        options: {
-          data: {
-            full_name: form.fullName,
-            clinic_name: form.clinicName,
-            phone: form.phone,
-          },
-        },
+      await apiFetch("/auth/register", {
+        method: "POST",
+        body: JSON.stringify({ email: form.email, password: form.password, role: "patient" }),
       });
-      if (error) throw error;
-      setSuccess(true);
+      router.push("/login");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Registrasi gagal. Coba lagi.");
     } finally {
       setIsLoading(false);
     }
   };
-
-  if (success) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
-        <div className="max-w-md w-full bg-white rounded-2xl p-10 text-center shadow-xl shadow-slate-200/60">
-          <div className="w-16 h-16 rounded-full bg-[#76f9d6]/30 flex items-center justify-center mx-auto mb-6">
-            <ShieldCheck className="h-8 w-8 text-[#006b57]" />
-          </div>
-          <h2 className="text-2xl font-black text-slate-900 mb-3">Pendaftaran Berhasil!</h2>
-          <p className="text-slate-500 text-sm leading-relaxed mb-8">
-            Cek email Anda di <strong className="text-slate-700">{form.email}</strong> untuk mengkonfirmasi akun dan mulai menggunakan DentalCloud Pro.
-          </p>
-          <Link href="/login" className="w-full h-11 bg-[#0d5a94] text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 hover:bg-[#004271] transition-colors">
-            Kembali ke Halaman Login
-          </Link>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="flex min-h-screen w-full">
