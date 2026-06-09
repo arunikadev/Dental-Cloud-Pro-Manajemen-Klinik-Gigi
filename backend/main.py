@@ -15,5 +15,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from routers import auth
+from routers import auth, patients
 app.include_router(auth.router)
+app.include_router(patients.router)
