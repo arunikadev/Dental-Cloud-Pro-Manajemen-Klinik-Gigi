@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, Stethoscope, Mail, Lock, Loader2, ShieldCheck } from "lucide-react";
-import { supabase, supabaseIsConfigured } from "@/lib/supabase";
+import { apiFetch, setToken } from "@/lib/api-client";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -15,18 +15,17 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!supabaseIsConfigured) {
-      setError("⚠️ Supabase belum dikonfigurasi. Isi kredensial di .env.local lalu restart server.");
-      return;
-    }
     setIsLoading(true);
     setError("");
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email: form.email,
-        password: form.password,
-      });
-      if (error) throw error;
+      const data = await apiFetch<{ access_token: string; token_type: string }>(
+        "/auth/login",
+        {
+          method: "POST",
+          body: JSON.stringify({ email: form.email, password: form.password }),
+        }
+      );
+      setToken(data.access_token);
       router.push("/dashboard");
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : "Login gagal. Periksa email dan password Anda.");
