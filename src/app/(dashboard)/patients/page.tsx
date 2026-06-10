@@ -147,7 +147,7 @@ export default function PatientsPage() {
                     </div>
                   </td>
                   <td className="px-6 py-4 text-slate-500 dark:text-slate-400">{patient.phone || "-"}</td>
-                  <td className="px-6 py-4 text-slate-500 dark:text-slate-400">{formatDateShort(patient.registered_at)}</td>
+                  <td className="px-6 py-4 text-slate-500 dark:text-slate-400">{formatDateShort(patient.created_at)}</td>
                   <td className="px-6 py-4">
                     <Badge className={patient.is_active ? "bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 hover:bg-green-50 dark:bg-green-900/20" : "bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:bg-slate-800"}>
                       {patient.is_active ? "Aktif" : "Nonaktif"}

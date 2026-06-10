@@ -20,11 +20,11 @@ export const mockStats: DashboardStats = {
 
 // ─── Patients ─────────────────────────────────────────────────────────────────
 export const mockPatients: Patient[] = [
-  { id:"p1", patient_code:"P-000001", full_name:"Budi Santoso", date_of_birth:"1985-03-12", gender:"male", blood_type:"O", phone:"081234567890", email:"budi@email.com", is_active:true, registered_at:"2024-01-15T08:00:00Z", allergy_notes:"Penisilin" },
-  { id:"p2", patient_code:"P-000002", full_name:"Siti Rahayu", date_of_birth:"1992-07-22", gender:"female", blood_type:"A", phone:"087654321000", email:"siti@email.com", is_active:true, registered_at:"2024-01-20T09:30:00Z" },
-  { id:"p3", patient_code:"P-000003", full_name:"Ahmad Fauzi", date_of_birth:"1978-11-05", gender:"male", blood_type:"B", phone:"085556667777", is_active:true, registered_at:"2024-02-01T10:00:00Z", allergy_notes:"Ibuprofen" },
-  { id:"p4", patient_code:"P-000004", full_name:"Dewi Permata", date_of_birth:"2000-04-18", gender:"female", blood_type:"AB", phone:"081122334455", email:"dewi@email.com", is_active:true, registered_at:"2024-02-10T14:00:00Z" },
-  { id:"p5", patient_code:"P-000005", full_name:"Rudi Hartono", date_of_birth:"1970-09-30", gender:"male", phone:"082233445566", is_active:true, registered_at:"2024-03-05T11:00:00Z" },
+  { id:"p1", patient_code:"P-000001", full_name:"Budi Santoso", date_of_birth:"1985-03-12", gender:"male", blood_type:"O", phone:"081234567890", email:"budi@email.com", is_active:true, created_at:"2024-01-15T08:00:00Z", allergy_notes:"Penisilin" },
+  { id:"p2", patient_code:"P-000002", full_name:"Siti Rahayu", date_of_birth:"1992-07-22", gender:"female", blood_type:"A", phone:"087654321000", email:"siti@email.com", is_active:true, created_at:"2024-01-20T09:30:00Z" },
+  { id:"p3", patient_code:"P-000003", full_name:"Ahmad Fauzi", date_of_birth:"1978-11-05", gender:"male", blood_type:"B", phone:"085556667777", is_active:true, created_at:"2024-02-01T10:00:00Z", allergy_notes:"Ibuprofen" },
+  { id:"p4", patient_code:"P-000004", full_name:"Dewi Permata", date_of_birth:"2000-04-18", gender:"female", blood_type:"AB", phone:"081122334455", email:"dewi@email.com", is_active:true, created_at:"2024-02-10T14:00:00Z" },
+  { id:"p5", patient_code:"P-000005", full_name:"Rudi Hartono", date_of_birth:"1970-09-30", gender:"male", phone:"082233445566", is_active:true, created_at:"2024-03-05T11:00:00Z" },
 ];
 
 // ─── Doctors ──────────────────────────────────────────────────────────────────

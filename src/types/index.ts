@@ -49,7 +49,7 @@ export interface Patient {
   emergency_contact_phone?: string;
   allergy_notes?: string;
   is_active: boolean;
-  registered_at: string;
+  created_at: string;
 }
 
 export interface Doctor {
