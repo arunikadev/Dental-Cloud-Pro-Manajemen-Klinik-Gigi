@@ -27,9 +27,9 @@ const NAV_ITEMS = [
   { label: "Kasir & Billing", href: "/billing",         icon: Receipt,         roles: ["admin", "cashier"] },
 
   // ── Manajemen (Admin saja) ───────────────────────────────────────────
-  { label: "Laporan",         href: "/reports",         icon: BarChart3,       roles: ["admin"] },
+  // { label: "Laporan",         href: "/reports",         icon: BarChart3,       roles: ["admin"] },
   { label: "Pengguna",        href: "/users",            icon: UserCog,         roles: ["admin"] },
-  { label: "Master Data",     href: "/settings",        icon: Database,        roles: ["admin"] },
+  // { label: "Master Data",     href: "/settings",        icon: Database,        roles: ["admin"] },
 ];
 
 

@@ -6,7 +6,7 @@ const ROLE_ROUTES: Record<string, string[]> = {
   "/medical-records": ["admin", "doctor"],
   "/inventory":       ["admin", "doctor"],
   "/billing":         ["admin", "cashier"],
-  "/reports":         ["admin"],
+  // "/reports":         ["admin"],
   "/users":           ["admin"],
   "/settings":        ["admin"],
 };
