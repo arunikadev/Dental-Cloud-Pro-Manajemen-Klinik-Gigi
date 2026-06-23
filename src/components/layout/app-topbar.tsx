@@ -88,6 +88,7 @@ export function AppTopbar() {
             placeholder="Cari pasien, rekam medis, stok..."
             className="pl-9 rounded-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-sm focus-visible:ring-[#0d5a94] h-9 cursor-pointer"
           />
+
         </div>
 
         {/* Mobile Search Button */}

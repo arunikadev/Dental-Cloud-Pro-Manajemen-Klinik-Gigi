@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { Download, CalendarIcon, Users, AlertTriangle, DollarSign, MoreVertical, Settings, Banknote } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ export default function DashboardPage() {
     completedToday: 2
   });
   const [recentAppointments, setRecentAppointments] = useState<any[]>([]);
+  const [lowStockItems, setLowStockItems] = useState<{ name: string; qty: number; unit: string; urgent: boolean }[]>([]);
 
   useEffect(() => {
     async function fetchDashboard() {
@@ -39,7 +41,29 @@ export default function DashboardPage() {
       
       const monthlyRevenue = invoices?.reduce((sum, inv) => sum + Number(inv.total_amount), 0) || 0;
 
-      setStats(prev => ({ ...prev, totalPatients: totalPatients || 0, monthlyRevenue }));
+      // Fetch Low Stock Products (stock_quantity <= minimum_stock)
+      const { data: lowStock } = await supabase
+        .from("products")
+        .select("name, stock_quantity, minimum_stock, unit, is_active")
+        .eq("is_active", true)
+        .filter("stock_quantity", "lte", "minimum_stock")
+        .order("stock_quantity", { ascending: true })
+        .limit(5);
+
+      const mappedLowStock = (lowStock || []).map((p) => ({
+        name: p.name,
+        qty: p.stock_quantity,
+        unit: `${p.unit} tersisa`,
+        urgent: p.stock_quantity === 0 || p.stock_quantity < p.minimum_stock / 2,
+      }));
+
+      setLowStockItems(mappedLowStock);
+      setStats(prev => ({
+        ...prev,
+        totalPatients: totalPatients || 0,
+        monthlyRevenue,
+        criticalStock: mappedLowStock.length,
+      }));
 
       // Fetch Recent Appointments
       const { data: apts } = await supabase
@@ -251,32 +275,34 @@ export default function DashboardPage() {
               </div>
             </div>
             <CardContent className="p-6 pt-0 space-y-4">
-               {[
-                 { name: "Dental Alginate", qty: 2, unit: "units remaining", urgent: true },
-                 { name: "Latex Gloves (M)", qty: 5, unit: "boxes remaining", urgent: true },
-                 { name: "Fluoride Gel", qty: 12, unit: "units remaining", urgent: false },
-               ].map((item, i) => (
-                 <div key={i} className={`flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-800 border-l-4 ${item.urgent ? 'border-red-500' : 'border-amber-400'}`}>
-                    <div>
-                      <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{item.name}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">{item.qty} {item.unit}</p>
-                    </div>
-               <Button
-                 variant="ghost"
-                 onClick={() => router.push("/inventory")}
-                 className="text-[#0D5A94] dark:text-blue-400 text-[12px] font-bold hover:bg-white dark:bg-slate-900 px-2 py-1 h-auto transition-colors"
-               >
-                 Pesan
-               </Button>
-                 </div>
-               ))}
-               <Button
-                 onClick={() => router.push("/inventory")}
-                 variant="outline"
-                 className="w-full mt-4 border-[#0D5A94] text-[#0D5A94] dark:text-blue-400 hover:bg-[#0D5A94] hover:text-white transition-all font-bold"
-               >
-                 Kelola Inventaris
-               </Button>
+               {lowStockItems.length === 0 ? (
+                 <p className="text-sm text-slate-400 text-center py-3">✅ Semua stok dalam kondisi aman</p>
+               ) : (
+                 lowStockItems.map((item, i) => (
+                   <div key={i} className={`flex items-center justify-between p-3 rounded-lg bg-slate-50 dark:bg-slate-800 border-l-4 ${item.urgent ? 'border-red-500' : 'border-amber-400'}`}>
+                     <div>
+                       <p className="text-sm font-bold text-slate-700 dark:text-slate-300">{item.name}</p>
+                       <p className="text-xs text-slate-500 dark:text-slate-400">{item.qty} {item.unit}</p>
+                     </div>
+                     <Link href="/inventory">
+                       <Button
+                         variant="ghost"
+                         className="text-[#0D5A94] dark:text-blue-400 text-[12px] font-bold hover:bg-white dark:bg-slate-900 px-2 py-1 h-auto transition-colors"
+                       >
+                         Kelola
+                       </Button>
+                     </Link>
+                   </div>
+                 ))
+               )}
+               <Link href="/inventory">
+                 <Button
+                   variant="outline"
+                   className="w-full mt-4 border-[#0D5A94] text-[#0D5A94] dark:text-blue-400 hover:bg-[#0D5A94] hover:text-white transition-all font-bold"
+                 >
+                   Kelola Inventaris
+                 </Button>
+               </Link>
             </CardContent>
           </Card>
 
