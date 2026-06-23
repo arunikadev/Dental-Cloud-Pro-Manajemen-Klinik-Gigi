@@ -88,8 +88,6 @@ export function AppTopbar() {
             placeholder="Cari pasien, rekam medis, stok..."
             className="pl-9 rounded-full bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-sm focus-visible:ring-[#0d5a94] h-9 cursor-pointer"
           />
-          <kbd className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none hidden md:inline-flex h-5 select-none items-center gap-1 rounded border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 px-1.5 font-mono text-[10px] font-medium text-slate-500">
-          </kbd>
         </div>
 
         {/* Mobile Search Button */}
