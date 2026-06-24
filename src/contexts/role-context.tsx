@@ -34,11 +34,17 @@ export function RoleProvider({ children }: { children: ReactNode }) {
     setRole(r);
     setIsLoading(false);
 
-    // Auto-set cookie jika belum ada (handle token lama sebelum cookie diterapkan)
+    // Jika token ada tapi cookie belum ada → set cookie + reload sekali
+    // agar middleware bisa membaca cookie pada request berikutnya
     if (r && typeof document !== "undefined") {
-      const hasCookie = document.cookie.includes("user_role=");
+      const hasCookie = document.cookie.split(";").some(c => c.trim().startsWith("user_role="));
       if (!hasCookie) {
         document.cookie = `user_role=${r}; path=/; max-age=${8 * 60 * 60}; SameSite=Lax`;
+        // Reload sekali (flag agar tidak loop)
+        if (!sessionStorage.getItem("cookie_repaired")) {
+          sessionStorage.setItem("cookie_repaired", "1");
+          window.location.reload();
+        }
       }
     }
   };
