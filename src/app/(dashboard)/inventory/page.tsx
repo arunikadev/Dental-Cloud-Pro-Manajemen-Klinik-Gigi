@@ -9,27 +9,66 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatCurrency } from "@/lib/utils";
 
-const MOCK_PRODUCTS = [
-  { id: "1", name: "Amoxicillin 500mg", sku: "PH-AMX-500", category: "Obat", stock: 450, unit: "Box", status: "ok" },
-  { id: "2", name: "Sterile Latex Gloves (M)", sku: "EQ-GLV-LAT-M", category: "Alat", stock: 12, unit: "Box", status: "low" },
-  { id: "3", name: "Dental Composite Resin A2", sku: "DN-CMP-A2", category: "Alat", stock: 0, unit: "Syringe", status: "empty" },
-  { id: "4", name: "Chlorhexidine 0.12%", sku: "PH-CHX-012", category: "Obat", stock: 85, unit: "Botol", status: "ok" },
-  { id: "5", name: "Dental Alginate", sku: "DN-ALG-001", category: "Alat", stock: 3, unit: "Kg", status: "low" },
-  { id: "6", name: "Ibuprofen 400mg", sku: "PH-IBU-400", category: "Obat", stock: 200, unit: "Strip", status: "ok" },
-];
+type Product = {
+  id: string;
+  name: string;
+  code: string;
+  description?: string;
+  unit: string;
+  purchase_price: number;
+  selling_price: number;
+  stock_quantity: number;
+  minimum_stock: number;
+  is_active: boolean;
+  category?: { name: string } | null;
+};
 
-function AddProductModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const [form, setForm] = useState({ name: "", sku: "", category: "Obat", stock: "", unit: "", price: "" });
+type StockMovement = {
+  id: string;
+  product_id: string;
+  type: string;
+  quantity: number;
+  notes?: string;
+  created_at: string;
+};
+
+function getStatus(p: Product) {
+  if (p.stock_quantity === 0) return "empty";
+  if (p.stock_quantity <= p.minimum_stock) return "low";
+  return "ok";
+}
+
+
+function AddProductModal({ open, onClose, onSuccess }: { open: boolean; onClose: () => void; onSuccess: () => void }) {
+  const [form, setForm] = useState({ name: "", code: "", category: "Obat", stock: "", unit: "", purchase_price: "", selling_price: "", minimum_stock: "5" });
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async () => {
-    if (!form.name || !form.sku) return;
-    setSaving(true);
-    await new Promise(r => setTimeout(r, 800));
-    setSaving(false);
-    setSuccess(true);
-    setTimeout(() => { setSuccess(false); onClose(); setForm({ name: "", sku: "", category: "Obat", stock: "", unit: "", price: "" }); }, 1200);
+    if (!form.name || !form.code) return;
+    setSaving(true); setError("");
+    try {
+      const { apiFetch } = await import("@/lib/api-client");
+      await apiFetch("/products", {
+        method: "POST",
+        body: JSON.stringify({
+          name: form.name,
+          code: form.code,
+          unit: form.unit || "pcs",
+          stock_quantity: Number(form.stock) || 0,
+          minimum_stock: Number(form.minimum_stock) || 5,
+          purchase_price: Number(form.purchase_price) || 0,
+          selling_price: Number(form.selling_price) || 0,
+        }),
+      });
+      setSuccess(true);
+      setTimeout(() => { setSuccess(false); onClose(); onSuccess(); setForm({ name: "", code: "", category: "Obat", stock: "", unit: "", purchase_price: "", selling_price: "", minimum_stock: "5" }); }, 1200);
+    } catch (e: any) {
+      setError(e?.message || "Gagal menyimpan produk");
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (!open) return null;
@@ -41,40 +80,43 @@ function AddProductModal({ open, onClose }: { open: boolean; onClose: () => void
           <button onClick={onClose} className="p-1.5 rounded-full hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-800"><X className="h-4 w-4 text-slate-400" /></button>
         </div>
         <div className="p-6 space-y-4">
-          {success && <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm px-4 py-2.5 rounded-lg font-semibold text-center">✓ Produk berhasil ditambahkan!</div>}
+          {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-2.5 rounded-lg font-semibold text-center">{error}</div>}
           <div className="grid grid-cols-2 gap-4">
             <div className="col-span-2">
               <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Nama Produk *</label>
               <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="cth: Amoxicillin 500mg" className="h-10 rounded-xl" />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">SKU / Kode *</label>
-              <Input value={form.sku} onChange={e => setForm(p => ({ ...p, sku: e.target.value }))} placeholder="PH-AMX-500" className="h-10 rounded-xl" />
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Kode Produk *</label>
+              <Input value={form.code} onChange={e => setForm(p => ({ ...p, code: e.target.value }))} placeholder="PH-AMX-500" className="h-10 rounded-xl" />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Kategori</label>
-              <select value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))} className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-[#0D5A94]/30">
-                <option>Obat</option><option>Alat</option><option>Lainnya</option>
-              </select>
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Satuan</label>
+              <Input value={form.unit} onChange={e => setForm(p => ({ ...p, unit: e.target.value }))} placeholder="Box, Strip, Botol..." className="h-10 rounded-xl" />
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Stok Awal</label>
               <Input type="number" value={form.stock} onChange={e => setForm(p => ({ ...p, stock: e.target.value }))} placeholder="0" className="h-10 rounded-xl" />
             </div>
             <div>
-              <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Satuan</label>
-              <Input value={form.unit} onChange={e => setForm(p => ({ ...p, unit: e.target.value }))} placeholder="Box, Botol, Pcs..." className="h-10 rounded-xl" />
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Stok Minimum</label>
+              <Input type="number" value={form.minimum_stock} onChange={e => setForm(p => ({ ...p, minimum_stock: e.target.value }))} placeholder="5" className="h-10 rounded-xl" />
             </div>
-            <div className="col-span-2">
-              <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Harga Beli (Rp)</label>
-              <Input type="number" value={form.price} onChange={e => setForm(p => ({ ...p, price: e.target.value }))} placeholder="50000" className="h-10 rounded-xl" />
+            <div>
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Harga Beli</label>
+              <Input type="number" value={form.purchase_price} onChange={e => setForm(p => ({ ...p, purchase_price: e.target.value }))} placeholder="0" className="h-10 rounded-xl" />
+            </div>
+            <div>
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Harga Jual</label>
+              <Input type="number" value={form.selling_price} onChange={e => setForm(p => ({ ...p, selling_price: e.target.value }))} placeholder="0" className="h-10 rounded-xl" />
             </div>
           </div>
+          {success && <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm px-4 py-2.5 rounded-lg font-semibold text-center">✓ Produk berhasil ditambahkan!</div>}
         </div>
         <div className="px-6 py-4 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3">
           <Button variant="outline" onClick={onClose}>Batal</Button>
-          <Button onClick={handleSubmit} disabled={saving || !form.name || !form.sku} className="bg-[#0D5A94] hover:bg-[#004271] text-white font-bold px-6">
-            {saving ? "Menyimpan..." : "Tambah Produk"}
+          <Button onClick={handleSubmit} disabled={saving || !form.name || !form.code} className="bg-[#0D5A94] hover:bg-[#004271] text-white font-bold gap-2 px-6">
+            {saving ? "Menyimpan..." : "Simpan Produk"}
           </Button>
         </div>
       </div>
@@ -82,19 +124,29 @@ function AddProductModal({ open, onClose }: { open: boolean; onClose: () => void
   );
 }
 
-function RestockModal({ open, onClose, products }: { open: boolean; onClose: () => void; products: typeof MOCK_PRODUCTS }) {
+function RestockModal({ open, onClose, products, onSuccess }: { open: boolean; onClose: () => void; products: Product[]; onSuccess: () => void }) {
   const [selected, setSelected] = useState("");
   const [qty, setQty] = useState("");
   const [saving, setSaving] = useState(false);
   const [success, setSuccess] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async () => {
     if (!selected || !qty) return;
-    setSaving(true);
-    await new Promise(r => setTimeout(r, 800));
-    setSaving(false);
-    setSuccess(true);
-    setTimeout(() => { setSuccess(false); onClose(); setSelected(""); setQty(""); }, 1200);
+    setSaving(true); setError("");
+    try {
+      const { apiFetch } = await import("@/lib/api-client");
+      await apiFetch("/stock-movements", {
+        method: "POST",
+        body: JSON.stringify({ product_id: selected, type: "in", quantity: Number(qty), notes: "Restock manual" }),
+      });
+      setSuccess(true);
+      setTimeout(() => { setSuccess(false); onClose(); onSuccess(); setSelected(""); setQty(""); }, 1200);
+    } catch (e: any) {
+      setError(e?.message || "Gagal menyimpan restock");
+    } finally {
+      setSaving(false);
+    }
   };
 
   if (!open) return null;
@@ -106,13 +158,16 @@ function RestockModal({ open, onClose, products }: { open: boolean; onClose: () 
           <button onClick={onClose} className="p-1.5 rounded-full hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-800"><X className="h-4 w-4 text-slate-400" /></button>
         </div>
         <div className="p-6 space-y-4">
-          {success && <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm px-4 py-2.5 rounded-lg font-semibold text-center">✓ Restock berhasil dicatat!</div>}
-          <div>
-            <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Pilih Produk</label>
-            <select value={selected} onChange={e => setSelected(e.target.value)} className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-[#0D5A94]/30">
-              <option value="">-- Pilih Produk --</option>
-              {products.map(p => <option key={p.id} value={p.id}>{p.name} (Stok: {p.stock} {p.unit})</option>)}
-            </select>
+          {error && <div className="bg-red-50 border border-red-200 text-red-700 text-sm px-4 py-2.5 rounded-lg font-semibold">{error}</div>}
+          {success && <div className="bg-emerald-50 border border-emerald-200 text-emerald-700 text-sm px-4 py-2.5 rounded-lg font-semibold text-center">✓ Restock berhasil!</div>}
+          <div className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Pilih Produk</label>
+              <select value={selected} onChange={e => setSelected(e.target.value)} className="w-full h-10 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm outline-none focus:ring-2 focus:ring-[#0D5A94]/30">
+                <option value="">-- Pilih produk --</option>
+                {products.map(p => <option key={p.id} value={p.id}>{p.name} (Stok: {p.stock_quantity} {p.unit})</option>)}
+              </select>
+            </div>  
           </div>
           <div>
             <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 mb-1.5 uppercase tracking-wider">Jumlah Tambahan</label>
@@ -138,25 +193,56 @@ export default function InventoryPage() {
   const [activeCategory, setActiveCategory] = useState("Semua");
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [movements, setMovements] = useState<StockMovement[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const PER_PAGE = 5;
+
+  const fetchData = async () => {
+    setIsLoading(true);
+    try {
+      const { apiFetch } = await import("@/lib/api-client");
+      const [prods, movs] = await Promise.all([
+        apiFetch<Product[]>("/products").catch(() => [] as Product[]),
+        apiFetch<StockMovement[]>("/stock-movements").catch(() => [] as StockMovement[]),
+      ]);
+      setProducts(prods);
+      setMovements(movs);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (!roleLoading && !isDoctor && !isAdmin) router.replace("/dashboard");
   }, [roleLoading, isDoctor, isAdmin, router]);
 
+  useEffect(() => {
+    if (!roleLoading && (isDoctor || isAdmin)) fetchData();
+  }, [roleLoading, isDoctor, isAdmin]);
+
   const filtered = useMemo(() => {
-    return MOCK_PRODUCTS.filter(p => {
-      const matchCat = activeCategory === "Semua" || p.category === activeCategory;
-      const matchSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.sku.toLowerCase().includes(searchQuery.toLowerCase());
+    return products.filter(p => {
+      const cat = p.category?.name || "Lainnya";
+      const matchCat = activeCategory === "Semua" || cat === activeCategory;
+      const matchSearch = p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.code.toLowerCase().includes(searchQuery.toLowerCase());
       return matchCat && matchSearch;
     });
-  }, [activeCategory, searchQuery]);
+  }, [products, activeCategory, searchQuery]);
 
-  if (roleLoading) return <div className="flex items-center justify-center h-64 text-slate-400">Memuat...</div>;
+  if (roleLoading || isLoading) return <div className="flex items-center justify-center h-64 text-slate-400">Memuat...</div>;
   if (!isDoctor && !isAdmin) return null;
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / PER_PAGE));
   const paged = filtered.slice((page - 1) * PER_PAGE, page * PER_PAGE);
+
+  // Hitung stats
+  const totalProduk = products.length;
+  const stokMenipis = products.filter(p => getStatus(p) === "low").length;
+  const stokHabis = products.filter(p => getStatus(p) === "empty").length;
+  const nilaiInventaris = products.reduce((sum, p) => sum + p.stock_quantity * p.purchase_price, 0);
+  const kategoriCount = new Set(products.map(p => p.category?.name || "Lainnya")).size;
 
   const statusBadge = (s: string) => {
     if (s === "ok") return <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black bg-emerald-100 text-emerald-700 uppercase"><span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />Tersedia</span>;
@@ -166,8 +252,8 @@ export default function InventoryPage() {
 
   return (
     <div className="space-y-8 animate-in fade-in-50 duration-500 max-w-[1440px] mx-auto">
-      <AddProductModal open={showAdd} onClose={() => setShowAdd(false)} />
-      <RestockModal open={showRestock} onClose={() => setShowRestock(false)} products={MOCK_PRODUCTS} />
+      <AddProductModal open={showAdd} onClose={() => setShowAdd(false)} onSuccess={fetchData} />
+      <RestockModal open={showRestock} onClose={() => setShowRestock(false)} products={products} onSuccess={fetchData} />
 
       {/* Header — breadcrumb dihapus */}
       <div className="flex flex-col md:flex-row items-start md:items-end justify-between gap-4">
@@ -190,25 +276,25 @@ export default function InventoryPage() {
         <Card className="border-slate-100 dark:border-slate-800 shadow-sm"><CardContent className="p-6">
           <div className="w-10 h-10 bg-blue-50 dark:bg-blue-900/20 rounded-lg flex items-center justify-center text-[#0D5A94] dark:text-blue-400 mb-4"><Package className="h-5 w-5" /></div>
           <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Total Produk</p>
-          <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-1">{MOCK_PRODUCTS.length}</h3>
-          <p className="text-[10px] text-slate-400 mt-2">Dari 3 kategori</p>
+          <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-1">{totalProduk}</h3>
+          <p className="text-[10px] text-slate-400 mt-2">Dari {kategoriCount} kategori</p>
         </CardContent></Card>
         <Card className="border-slate-100 dark:border-slate-800 shadow-sm"><CardContent className="p-6">
           <div className="w-10 h-10 bg-orange-50 rounded-lg flex items-center justify-center text-orange-600 mb-4"><AlertTriangle className="h-5 w-5" /></div>
           <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Stok Menipis</p>
-          <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-1">{MOCK_PRODUCTS.filter(p => p.status === "low").length}</h3>
+          <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-1">{stokMenipis}</h3>
           <p className="text-[10px] text-slate-400 mt-2">Perlu segera restock</p>
         </CardContent></Card>
         <Card className="border-slate-100 dark:border-slate-800 shadow-sm"><CardContent className="p-6">
           <div className="w-10 h-10 bg-red-50 rounded-lg flex items-center justify-center text-red-600 mb-4"><AlertCircle className="h-5 w-5" /></div>
           <p className="text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">Stok Habis</p>
-          <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-1">{MOCK_PRODUCTS.filter(p => p.status === "empty").length}</h3>
+          <h3 className="text-2xl font-black text-slate-900 dark:text-white mt-1">{stokHabis}</h3>
           <p className="text-[10px] text-slate-400 mt-2">Perlu pengadaan segera</p>
         </CardContent></Card>
         <Card className="bg-[#0D5A94] border-transparent shadow-xl text-white"><CardContent className="p-6">
           <div className="w-10 h-10 bg-white dark:bg-slate-900/10 rounded-lg flex items-center justify-center text-white mb-4"><DollarSign className="h-5 w-5" /></div>
           <p className="text-blue-200 text-xs font-bold uppercase tracking-wider">Nilai Inventaris</p>
-          <h3 className="text-2xl font-black mt-1">{formatCurrency(425000000)}</h3>
+          <h3 className="text-2xl font-black mt-1">{formatCurrency(nilaiInventaris)}</h3>
           <div className="w-full bg-white dark:bg-slate-900/20 h-1.5 rounded-full mt-4 overflow-hidden"><div className="bg-[#76f9d6] w-3/4 h-full rounded-full" /></div>
         </CardContent></Card>
       </div>
@@ -245,33 +331,37 @@ export default function InventoryPage() {
             <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
               {paged.length === 0 ? (
                 <tr><td colSpan={6} className="px-6 py-10 text-center text-slate-400">Tidak ada produk yang sesuai.</td></tr>
-              ) : paged.map(item => (
-                <tr key={item.id} className="hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors group even:bg-slate-50 dark:bg-slate-800 dark:even:bg-slate-800">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
-                        {item.category === "Obat" ? <Activity className="h-4 w-4 text-slate-400" /> : <Package className="h-4 w-4 text-slate-400" />}
+              ) : paged.map(item => {
+                const cat = item.category?.name || "Lainnya";
+                const status = getStatus(item);
+                return (
+                  <tr key={item.id} className="hover:bg-blue-50/30 dark:hover:bg-blue-900/10 transition-colors group even:bg-slate-50 dark:bg-slate-800 dark:even:bg-slate-800">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded bg-slate-100 dark:bg-slate-800 flex items-center justify-center shrink-0">
+                          {cat === "Obat" ? <Activity className="h-4 w-4 text-slate-400" /> : <Package className="h-4 w-4 text-slate-400" />}
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-900 dark:text-white text-sm">{item.name}</p>
+                          <p className="text-[10px] text-slate-400">Kode: {item.code}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="font-bold text-slate-900 dark:text-white text-sm">{item.name}</p>
-                        <p className="text-[10px] text-slate-400">SKU: {item.sku}</p>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase ${cat === "Obat" ? "bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400" : "bg-blue-50 dark:bg-blue-900/20 text-blue-600"}`}>{cat}</span>
+                    </td>
+                    <td className="px-6 py-4 text-center font-black text-slate-900 dark:text-white">{item.stock_quantity}</td>
+                    <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-xs font-medium">{item.unit}</td>
+                    <td className="px-6 py-4">{statusBadge(status)}</td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex justify-end gap-1">
+                        <Button onClick={() => setShowRestock(true)} variant="ghost" size="sm" className="h-7 text-xs text-[#006b57] dark:text-green-400 hover:bg-emerald-50 font-bold opacity-0 group-hover:opacity-100 transition-opacity">Restock</Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-[#0D5A94] dark:text-blue-400"><MoreVertical className="h-4 w-4" /></Button>
                       </div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2.5 py-1 rounded text-[10px] font-bold uppercase ${item.category === "Obat" ? "bg-purple-50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400" : "bg-blue-50 dark:bg-blue-900/20 text-blue-600"}`}>{item.category}</span>
-                  </td>
-                  <td className="px-6 py-4 text-center font-black text-slate-900 dark:text-white">{item.stock}</td>
-                  <td className="px-6 py-4 text-slate-500 dark:text-slate-400 text-xs font-medium">{item.unit}</td>
-                  <td className="px-6 py-4">{statusBadge(item.status)}</td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex justify-end gap-1">
-                      <Button onClick={() => setShowRestock(true)} variant="ghost" size="sm" className="h-7 text-xs text-[#006b57] dark:text-green-400 hover:bg-emerald-50 font-bold opacity-0 group-hover:opacity-100 transition-opacity">Restock</Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-slate-400 hover:text-[#0D5A94] dark:text-blue-400"><MoreVertical className="h-4 w-4" /></Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -302,20 +392,28 @@ export default function InventoryPage() {
               <Button variant="link" className="text-xs text-[#0D5A94] dark:text-blue-400 font-bold p-0 h-auto">Lihat Semua</Button>
             </div>
             <div className="space-y-5">
-              {[
-                { dot: "bg-green-50 dark:bg-green-900/200", title: "Stok Masuk: Amoxicillin 500mg", sub: "+200 Box oleh Admin Sarah", time: "2 jam lalu" },
-                { dot: "bg-red-500", title: "Stok Keluar: Sterile Latex Gloves", sub: "-5 Box untuk Ruang Operasi 4", time: "4 jam lalu" },
-                { dot: "bg-blue-50 dark:bg-blue-900/200", title: "Audit Inventaris Selesai", sub: "Kategori: Obat - Tidak ada selisih", time: "Kemarin" },
-              ].map((item, i) => (
-                <div key={i} className="flex items-start gap-4">
-                  <div className={`w-1.5 h-1.5 rounded-full ${item.dot} mt-1.5 shrink-0`} />
-                  <div className="flex-1">
-                    <p className="text-xs font-bold text-slate-900 dark:text-white">{item.title}</p>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">{item.sub}</p>
+              {movements.length === 0 ? (
+                <p className="text-xs text-slate-400 text-center py-4">Belum ada pergerakan stok.</p>
+              ) : movements.slice(0, 5).map((m) => {
+                const prod = products.find(p => p.id === m.product_id);
+                const isIn = m.type === "in";
+                return (
+                  <div key={m.id} className="flex items-start gap-4">
+                    <div className={`w-1.5 h-1.5 rounded-full mt-1.5 shrink-0 ${isIn ? "bg-green-500" : "bg-red-500"}`} />
+                    <div className="flex-1">
+                      <p className="text-xs font-bold text-slate-900 dark:text-white">
+                        {isIn ? "Stok Masuk" : "Stok Keluar"}: {prod?.name || m.product_id}
+                      </p>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                        {isIn ? "+" : "-"}{m.quantity} {prod?.unit || ""} {m.notes ? `· ${m.notes}` : ""}
+                      </p>
+                    </div>
+                    <p className="text-[10px] font-bold text-slate-400 whitespace-nowrap">
+                      {new Date(m.created_at).toLocaleDateString("id-ID", { day: "2-digit", month: "short" })}
+                    </p>
                   </div>
-                  <p className="text-[10px] font-bold text-slate-400 whitespace-nowrap">{item.time}</p>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>
