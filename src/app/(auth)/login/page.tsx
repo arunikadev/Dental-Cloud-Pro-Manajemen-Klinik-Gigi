@@ -59,7 +59,7 @@ export default function LoginPage() {
             </p>
             <div className="flex items-center gap-6 mt-10 pt-8 border-t border-white/20">
               <div className="text-center">
-                <p className="text-2xl font-black text-white">1,200+</p>
+                <p className="text-2xl font-black text-white">10+</p>
                 <p className="text-xs text-white/60 font-medium mt-1">Pasien Aktif</p>
               </div>
               <div className="w-px h-10 bg-white/20"></div>
