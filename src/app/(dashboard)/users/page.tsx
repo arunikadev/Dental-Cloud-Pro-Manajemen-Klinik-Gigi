@@ -231,7 +231,7 @@ export default function UsersPage() {
   const router = useRouter();
 
   const [users, setUsers] = useState<AppUser[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [filterRole, setFilterRole] = useState("all");
   const [showAdd, setShowAdd] = useState(false);
@@ -283,7 +283,7 @@ export default function UsersPage() {
   const doctorCount = users.filter(u => u.role === "doctor").length;
   const cashierCount = users.filter(u => u.role === "cashier").length;
 
-  if (roleLoading || isLoading) return (
+  if (roleLoading) return (
     <div className="flex items-center justify-center h-64">
       <Loader2 className="h-8 w-8 animate-spin text-[#0D5A94]" />
     </div>
@@ -384,7 +384,16 @@ export default function UsersPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-50 dark:divide-slate-800">
-              {filtered.length === 0 ? (
+              {isLoading ? (
+                <tr>
+                  <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
+                    <div className="flex items-center justify-center gap-2">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                      <span className="text-sm">Memuat data pengguna...</span>
+                    </div>
+                  </td>
+                </tr>
+              ) : filtered.length === 0 ? (
                 <tr>
                   <td colSpan={6} className="px-6 py-12 text-center text-slate-400">
                     {search ? "Tidak ditemukan pengguna dengan email tersebut." : "Belum ada pengguna."}
